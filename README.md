@@ -5,7 +5,14 @@ novel live migration mechanism that is reliable, efficient, and platform-indepen
 
 ## Getting Started
 
+### カレントディレクトリにダウンロードせずライブラリとして使う方法
+```bash
+pip install git+https://github.com/MRyutaro/elastic_notebook_slim.git
 ```
+
+
+### ソースコードをローカルのカレントディレクトリにダウンロードして使う方法
+```bash
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
 cd https://github.com/MRyutaro/elastic_notebook_slim.git
 pip install .
