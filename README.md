@@ -14,8 +14,7 @@ pip install git+https://github.com/MRyutaro/elastic_notebook_slim.git
 ### ソースコードをローカルのカレントディレクトリにダウンロードして使う方法
 ```bash
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
-cd https://github.com/MRyutaro/elastic_notebook_slim.git
-pip install .
+pip install ./elastic_notebook_slim
 ```
 
 ## Project Structure
