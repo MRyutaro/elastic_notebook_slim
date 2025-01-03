@@ -7,7 +7,7 @@ novel live migration mechanism that is reliable, efficient, and platform-indepen
 
 ### カレントディレクトリにダウンロードせずライブラリとして使う方法
 ```bash
-pip install git+https://github.com/MRyutaro/elastic_notebook_slim.git
+pip install elastic-notebook-slim
 ```
 
 
