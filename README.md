@@ -6,13 +6,13 @@ https://github.com/illinoisdata/ElasticNotebook
 
 ## インストール方法
 
-### カレントディレクトリにダウンロードせずライブラリとして使う方法
+### カレントディレクトリにダウンロードせずライブラリとして使う方法（一般ユーザ向け）
 ```bash
 pip install elastic-notebook-slim
 ```
 
 
-### ソースコードをローカルにダウンロードして使う方法
+### ソースコードをローカルにダウンロードして使う方法（開発者向け）
 ```bash
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
 pip install ./elastic_notebook_slim
