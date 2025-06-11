@@ -1,9 +1,6 @@
 # ElasticNotebook
 
-Welcome to ElasticNotebook! ElasticNotebook is a checkpoint/restore tool for Jupyter Notebook sessions, which uses a 
-novel live migration mechanism that is reliable, efficient, and platform-independent.
-
-## Getting Started
+## インストール方法
 
 ### カレントディレクトリにダウンロードせずライブラリとして使う方法
 ```bash
