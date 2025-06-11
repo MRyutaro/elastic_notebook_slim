@@ -12,7 +12,7 @@ pip install elastic-notebook-slim
 ```
 
 
-### ソースコードをローカルのカレントディレクトリにダウンロードして使う方法
+### ソースコードをローカルにダウンロードして使う方法
 ```bash
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
 pip install ./elastic_notebook_slim
