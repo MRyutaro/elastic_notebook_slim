@@ -1,5 +1,9 @@
 # ElasticNotebook
 
+## 元レポジトリ
+
+https://github.com/illinoisdata/ElasticNotebook
+
 ## インストール方法
 
 ### カレントディレクトリにダウンロードせずライブラリとして使う方法
