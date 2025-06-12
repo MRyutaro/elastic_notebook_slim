@@ -7,11 +7,13 @@ https://github.com/illinoisdata/ElasticNotebook
 ## インストール方法
 
 ### カレントディレクトリにダウンロードせずライブラリとして使う方法（一般ユーザ向け）
+
 ```bash
 pip install elastic-notebook-slim
 ```
 
 ### ソースコードをローカルにダウンロードして使う方法（開発者向け）
+
 ```bash
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
 pip install ./elastic_notebook_slim
@@ -54,7 +56,23 @@ elastic-notebook
         └───update_graph.py                ## Helper for updating Application History Graph
 ```
 
-## PyPiへのアップロード方法
+## PyPi へのアップロード方法
+
+### 自動でアップロードする方法
+
+```
+uv pip install -e .
+bump2version {hogehoge}  # コマンドは以下のいずれかから選択する
+git push --tags
+```
+
+| コマンド             | 説明                       | バージョン変更例 |
+| -------------------- | -------------------------- | ---------------- |
+| `bump2version patch` | パッチバージョンを上げる   | 0.0.1 → 0.0.2    |
+| `bump2version minor` | マイナーバージョンを上げる | 0.1.0 → 0.2.0    |
+| `bump2version major` | メジャーバージョンを上げる | 1.0.0 → 2.0.0    |
+
+### 手動でアップロードする方法
 
 ```
 uv pip install twine build
