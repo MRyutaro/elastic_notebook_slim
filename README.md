@@ -1,4 +1,4 @@
-# ElasticNotebook
+# elastic-notebook-slim
 
 ## 元レポジトリ
 
@@ -10,7 +10,6 @@ https://github.com/illinoisdata/ElasticNotebook
 ```bash
 pip install elastic-notebook-slim
 ```
-
 
 ### ソースコードをローカルにダウンロードして使う方法（開発者向け）
 ```bash
@@ -53,4 +52,12 @@ elastic-notebook
         │───find_output_vars.py            ## Helper for finding created/deleted variables via namespace difference
         │───restore_notebook.py            ## Line magic for restoring notebook session (Section 3.2)
         └───update_graph.py                ## Helper for updating Application History Graph
+```
+
+## PyPiへのアップロード方法
+
+```
+uv pip install twine build
+python -m build
+python -m twine upload dist/*
 ```
