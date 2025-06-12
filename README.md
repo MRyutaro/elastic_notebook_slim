@@ -61,9 +61,9 @@ elastic-notebook
 ### 自動でアップロードする方法
 
 ```
-uv pip install -e .
+uv pip install -e .  # 初回のみ
 bump2version {hogehoge}  # コマンドは以下のいずれかから選択する
-git push --tags
+git push --follow-tags
 ```
 
 | コマンド             | 説明                       | バージョン変更例 |
