@@ -71,6 +71,29 @@ class ElasticNotebook:
         # デバッグフラグ
         self.debug = False
 
+        # マイグレーションと再計算の変数リスト
+        self._vss_to_migrate = []
+        self._vss_to_recompute = []
+
+    @property
+    def vss_to_migrate(self):
+        """マイグレーション対象の変数リストを取得"""
+        return self._vss_to_migrate
+
+    @property
+    def vss_to_recompute(self):
+        """再計算対象の変数リストを取得"""
+        return self._vss_to_recompute
+
+    def update_migration_lists(self, vss_to_migrate, vss_to_recompute):
+        """マイグレーションと再計算の変数リストを更新"""
+        self._vss_to_migrate = [vs.name for vs in vss_to_migrate]
+        self._vss_to_recompute = [vs.name for vs in vss_to_recompute]
+
+    def __str__(self):
+        """文字列表現を定義"""
+        return f"マイグレーション対象: {self.vss_to_migrate}\n再計算対象: {self.vss_to_recompute}"
+
     def set_debug(self, debug):
         self.debug = debug
 
@@ -222,6 +245,7 @@ class ElasticNotebook:
         self.notebook_name = name
 
     def checkpoint(self, filename):
+        """チェックポイントを作成"""
         if self.debug:
             print("Checkpointing...")
 
@@ -272,7 +296,7 @@ class ElasticNotebook:
             self.selector.migration_speed_bps = self.migration_speed_bps
 
         # Checkpoint the notebook.
-        checkpoint(
+        return checkpoint(
             self.dependency_graph,
             self.shell,
             self.fingerprint_dict,
@@ -283,6 +307,7 @@ class ElasticNotebook:
             self.write_log_location,
             self.notebook_name,
             self.optimizer_name,
+            self,  # 自身のインスタンスを渡す
         )
 
     def load_checkpoint(self, filename):

@@ -22,6 +22,7 @@ def checkpoint(
     write_log_location=None,
     notebook_name=None,
     optimizer_name=None,
+    elastic_notebook=None,
 ):
     """
     Checkpoints the notebook. The optimizer selects the VSs to migrate and recompute and the OEs to recompute, then
@@ -35,6 +36,7 @@ def checkpoint(
         write_log_location (str): location to write component runtimes to. For experimentation only.
         notebook_name (str): notebook name. For experimentation only.
         optimizer_name (str): optimizer name. For experimentation only.
+        elastic_notebook (ElasticNotebook, optional): ElasticNotebook instance to update migration lists.
     """
     profile_start = time.time()
 
@@ -168,6 +170,10 @@ def checkpoint(
                 + " seconds"
                 + "\n"
             )
+
+    # 変数リストを更新
+    if elastic_notebook is not None:
+        elastic_notebook.update_migration_lists(vss_to_migrate, vss_to_recompute)
 
     # Store the notebook checkpoint to the specified location.
     migrate_start = time.time()
