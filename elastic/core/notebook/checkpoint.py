@@ -52,6 +52,11 @@ def checkpoint(
 
     # Profile the size of each variable defined in the current session.
     for active_vs in active_vss:
+        # 変数がfingerprint_dictに存在するかチェック
+        if active_vs.name not in fingerprint_dict:
+            print(f"Warning: Variable '{active_vs.name}' not found in fingerprint_dict")
+            continue
+
         attr_str = getattr(shell.user_ns[active_vs.name], "__module__", None)
         # Object is unserializable
         if isinstance(fingerprint_dict[active_vs.name][2], UnserializableObj):
@@ -70,10 +75,12 @@ def checkpoint(
     overlapping_vss = []
     for active_vs1 in active_vss:
         for active_vs2 in active_vss:
-            if active_vs1 != active_vs2 and fingerprint_dict[active_vs1.name][
-                1
-            ].intersection(fingerprint_dict[active_vs2.name][1]):
-                overlapping_vss.append((active_vs1, active_vs2))
+            if active_vs1 != active_vs2:
+                # 両方の変数がfingerprint_dictに存在するかチェック
+                if active_vs1.name not in fingerprint_dict or active_vs2.name not in fingerprint_dict:
+                    continue
+                if fingerprint_dict[active_vs1.name][1].intersection(fingerprint_dict[active_vs2.name][1]):
+                    overlapping_vss.append((active_vs1, active_vs2))
 
     profile_end = time.time()
     if write_log_location:
