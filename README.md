@@ -18,7 +18,7 @@ pip install elastic-notebook-slim
 git clone https://github.com/MRyutaro/elastic_notebook_slim.git
 pip install ./elastic_notebook_slim
 ```
-
+c
 ## Project Structure
 
 ```

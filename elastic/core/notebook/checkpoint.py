@@ -2,31 +2,39 @@ import time
 from typing import Dict
 
 import numpy as np
-from elastic.algorithm.selector import Selector
-from elastic.core.graph.graph import DependencyGraph
-from elastic.core.io.migrate import migrate
-from elastic.core.io.pickle import is_picklable
-from elastic.core.common.profile_variable_size import profile_variable_size
 from ipykernel.zmqshell import ZMQInteractiveShell
 
+from elastic.algorithm.selector import Selector
+from elastic.core.common.profile_variable_size import profile_variable_size
+from elastic.core.graph.graph import DependencyGraph
+from elastic.core.io.migrate import migrate
 from elastic.core.mutation.object_hash import UnserializableObj
 
 
-def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_dict: Dict,
-               selector: Selector, udfs: set, filename: str, profile_dict, write_log_location=None, notebook_name=None,
-               optimizer_name=None):
+def checkpoint(
+    graph: DependencyGraph,
+    shell: ZMQInteractiveShell,
+    fingerprint_dict: Dict,
+    selector: Selector,
+    udfs: set,
+    filename: str,
+    profile_dict,
+    write_log_location=None,
+    notebook_name=None,
+    optimizer_name=None,
+):
     """
-        Checkpoints the notebook. The optimizer selects the VSs to migrate and recompute and the OEs to recompute, then
-        writes the checkpoint as the specified filename.
-        Args:
-            graph (DependencyGraph): dependency graph representation of the notebook.
-            shell (ZMQInteractiveShell): interactive Jupyter shell storing the state of the current session.
-            selector (Selector): optimizer for computing the checkpointing configuration.
-            udfs (set): set of user-declared functions.
-            filename (str): location to write the file to.
-            write_log_location (str): location to write component runtimes to. For experimentation only.
-            notebook_name (str): notebook name. For experimentation only.
-            optimizer_name (str): optimizer name. For experimentation only.
+    Checkpoints the notebook. The optimizer selects the VSs to migrate and recompute and the OEs to recompute, then
+    writes the checkpoint as the specified filename.
+    Args:
+        graph (DependencyGraph): dependency graph representation of the notebook.
+        shell (ZMQInteractiveShell): interactive Jupyter shell storing the state of the current session.
+        selector (Selector): optimizer for computing the checkpointing configuration.
+        udfs (set): set of user-declared functions.
+        filename (str): location to write the file to.
+        write_log_location (str): location to write component runtimes to. For experimentation only.
+        notebook_name (str): notebook name. For experimentation only.
+        optimizer_name (str): optimizer name. For experimentation only.
     """
     profile_start = time.time()
 
@@ -42,7 +50,7 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
 
     # Profile the size of each variable defined in the current session.
     for active_vs in active_vss:
-        attr_str = getattr(shell.user_ns[active_vs.name], '__module__', None)
+        attr_str = getattr(shell.user_ns[active_vs.name], "__module__", None)
         # Object is unserializable
         if isinstance(fingerprint_dict[active_vs.name][2], UnserializableObj):
             active_vs.size = np.inf
@@ -60,17 +68,41 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
     overlapping_vss = []
     for active_vs1 in active_vss:
         for active_vs2 in active_vss:
-            if active_vs1 != active_vs2 and fingerprint_dict[active_vs1.name][1].intersection(
-                    fingerprint_dict[active_vs2.name][1]):
+            if active_vs1 != active_vs2 and fingerprint_dict[active_vs1.name][
+                1
+            ].intersection(fingerprint_dict[active_vs2.name][1]):
                 overlapping_vss.append((active_vs1, active_vs2))
 
     profile_end = time.time()
     if write_log_location:
-        with open(write_log_location + '/output_' + notebook_name + '_' + optimizer_name + '.txt', 'a') as f:
-            f.write('overlappings - ' + repr(len(overlapping_vss)) + '\n')
-            f.write('Profile stage took - ' + repr(profile_start - profile_end) + " seconds" + '\n')
-            f.write('Idgraph stage took - ' + repr(profile_dict["idgraph"]) + " seconds" + '\n')
-            f.write('Representation stage took - ' + repr(profile_dict["representation"]) + " seconds" + '\n')
+        with open(
+            write_log_location
+            + "/output_"
+            + notebook_name
+            + "_"
+            + optimizer_name
+            + ".txt",
+            "a",
+        ) as f:
+            f.write("overlappings - " + repr(len(overlapping_vss)) + "\n")
+            f.write(
+                "Profile stage took - "
+                + repr(profile_start - profile_end)
+                + " seconds"
+                + "\n"
+            )
+            f.write(
+                "Idgraph stage took - "
+                + repr(profile_dict["idgraph"])
+                + " seconds"
+                + "\n"
+            )
+            f.write(
+                "Representation stage took - "
+                + repr(profile_dict["representation"])
+                + " seconds"
+                + "\n"
+            )
 
     optimize_start = time.time()
     # Initialize the optimizer.
@@ -82,7 +114,9 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
 
     # Use the optimizer to compute the checkpointing configuration.
     opt_start = time.time()
-    vss_to_migrate, ces_to_recompute = selector.select_vss(write_log_location, notebook_name, optimizer_name)
+    vss_to_migrate, ces_to_recompute = selector.select_vss(
+        write_log_location, notebook_name, optimizer_name
+    )
     opt_end = time.time()
     print("---------------------------")
     print("variables to migrate:")
@@ -107,19 +141,64 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
 
     optimize_end = time.time()
     if write_log_location:
-        with open(write_log_location + '/output_' + notebook_name + '_' + optimizer_name + '.txt', 'a') as f:
-            f.write('Optimize stage took - ' + repr(optimize_end - optimize_start) + " seconds" + '\n')
-            f.write('  Add stage took - ' + repr(add_end - add_start) + " seconds" + '\n')
-            f.write('  Opt stage took - ' + repr(opt_end - opt_start) + " seconds" + '\n')
-            f.write('  Diff stage took - ' + repr(difference_end - difference_start) + " seconds" + '\n')
+        with open(
+            write_log_location
+            + "/output_"
+            + notebook_name
+            + "_"
+            + optimizer_name
+            + ".txt",
+            "a",
+        ) as f:
+            f.write(
+                "Optimize stage took - "
+                + repr(optimize_end - optimize_start)
+                + " seconds"
+                + "\n"
+            )
+            f.write(
+                "  Add stage took - " + repr(add_end - add_start) + " seconds" + "\n"
+            )
+            f.write(
+                "  Opt stage took - " + repr(opt_end - opt_start) + " seconds" + "\n"
+            )
+            f.write(
+                "  Diff stage took - "
+                + repr(difference_end - difference_start)
+                + " seconds"
+                + "\n"
+            )
 
     # Store the notebook checkpoint to the specified location.
     migrate_start = time.time()
     migrate_success = True
-    migrate(graph, shell, vss_to_migrate, vss_to_recompute, ces_to_recompute, udfs, selector.recomputation_ces, selector.overlapping_vss, filename)
+    migrate(
+        graph,
+        shell,
+        vss_to_migrate,
+        vss_to_recompute,
+        ces_to_recompute,
+        udfs,
+        selector.recomputation_ces,
+        selector.overlapping_vss,
+        filename,
+    )
     migrate_end = time.time()
 
     if write_log_location:
-        with open(write_log_location + '/output_' + notebook_name + '_' + optimizer_name + '.txt', 'a') as f:
-            f.write('Migrate stage took - ' + repr(migrate_end - migrate_start) + " seconds" + '\n')
+        with open(
+            write_log_location
+            + "/output_"
+            + notebook_name
+            + "_"
+            + optimizer_name
+            + ".txt",
+            "a",
+        ) as f:
+            f.write(
+                "Migrate stage took - "
+                + repr(migrate_end - migrate_start)
+                + " seconds"
+                + "\n"
+            )
     return migrate_success

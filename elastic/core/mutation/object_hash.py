@@ -1,18 +1,20 @@
+import copy
+import io
 from inspect import isclass
-from types import ModuleType
-from types import FunctionType
+from types import FunctionType, ModuleType
+
 import dill
-import pandas as pd
+
 # import polars as pl
 import lightgbm
 import numpy as np
+import pandas as pd
 import scipy
 import torch
-import copy
-import io
 import xxhash
 
 BASE_TYPES = [type(None), FunctionType]
+
 
 class ImmutableObj:
     def __init__(self):
@@ -34,6 +36,7 @@ class NoneObj:
             return True
         return False
 
+
 # Object representing a dataframe.
 class DataframeObj:
     def __init__(self):
@@ -44,6 +47,7 @@ class DataframeObj:
             return True
         return False
 
+
 class NxGraphObj:
     def __init__(self, graph):
         self.graph = graph
@@ -52,6 +56,7 @@ class NxGraphObj:
         if isinstance(other, NxGraphObj):
             return nx.graphs_equal(self.graph, other.graph)
         return False
+
 
 class NpArrayObj:
     def __init__(self, arraystr):
@@ -63,6 +68,7 @@ class NpArrayObj:
             return self.arraystr == other.arraystr
         return False
 
+
 class ScipyArrayObj:
     def __init__(self, arraystr):
         self.arraystr = arraystr
@@ -72,6 +78,7 @@ class ScipyArrayObj:
         if isinstance(other, ScipyArrayObj):
             return self.arraystr == other.arraystr
         return False
+
 
 class TorchTensorObj:
     def __init__(self, arraystr):
@@ -83,6 +90,7 @@ class TorchTensorObj:
             return self.arraystr == other.arraystr
         return False
 
+
 class ModuleObj:
     def __init__(self):
         pass
@@ -91,6 +99,7 @@ class ModuleObj:
         if isinstance(other, ModuleObj):
             return True
         return False
+
 
 # Object representing general unserializable class.
 class UnserializableObj:
@@ -102,6 +111,7 @@ class UnserializableObj:
             return True
         return False
 
+
 class UncomparableObj:
     def __init__(self):
         pass
@@ -111,14 +121,15 @@ class UncomparableObj:
             return True
         return False
 
+
 def construct_object_hash(obj, deepcopy=False):
     """
-        Construct an object hash for the object. Uses deep-copy as a fallback.
+    Construct an object hash for the object. Uses deep-copy as a fallback.
     """
 
     if type(obj) in BASE_TYPES:
         return ImmutableObj()
-    
+
     if isclass(obj):
         return type(obj)
 
@@ -126,7 +137,7 @@ def construct_object_hash(obj, deepcopy=False):
     # All the writeable flags of these arrays are set to false; if after cell execution, any of these flags are
     # reset to True, we assume that the dataframe has been modified.
     if isinstance(obj, pd.DataFrame):
-        for (_, col) in obj.items():
+        for _, col in obj.items():
             col.__array__().flags.writeable = False
         return DataframeObj()
 
@@ -134,8 +145,14 @@ def construct_object_hash(obj, deepcopy=False):
         obj.__array__().flags.writeable = False
         return DataframeObj()
 
-    attr_str = getattr(obj, '__module__', None)
-    if attr_str and ("matplotlib" in attr_str or "transformers" in attr_str or "networkx" in attr_str or "keras" in attr_str or "tensorflow" in attr_str):
+    attr_str = getattr(obj, "__module__", None)
+    if attr_str and (
+        "matplotlib" in attr_str
+        or "transformers" in attr_str
+        or "networkx" in attr_str
+        or "keras" in attr_str
+        or "tensorflow" in attr_str
+    ):
         return UncomparableObj()
 
     # Object is file handle
@@ -164,7 +181,7 @@ def construct_object_hash(obj, deepcopy=False):
         return ModuleObj()
 
     # Polars dataframes are immutable.
-    #if isinstance(obj, pl.DataFrame):
+    # if isinstance(obj, pl.DataFrame):
     #    return type(obj)
 
     # LightGBM dataframes are immutable.

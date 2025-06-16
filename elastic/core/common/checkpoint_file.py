@@ -1,5 +1,6 @@
 import json
 from typing import Dict
+
 from elastic.core.graph.graph import DependencyGraph
 
 KEY_DEPENDENCY_GRAPH = "dependencyGraph"
@@ -14,8 +15,9 @@ KEY_UDFS = "udfs"
 
 class CheckpointFile:
     """
-        JSON representation of the notebook checkpoint.
+    JSON representation of the notebook checkpoint.
     """
+
     def __init__(self):
         # Dependency graph representation of the notebook.
         self.dependency_graph = None
@@ -99,24 +101,29 @@ class CheckpointFile:
         return self.udfs
 
     def to_json_str(self) -> str:
-        return json.dumps({
-            KEY_DEPENDENCY_GRAPH: self.dependency_graph,
-            KEY_VARIABLES: self.variables,
-            KEY_VSS_TO_MIGRATE: self.vss_to_migrate,
-            KEY_VSS_TO_RECOMPUTE: self.vss_to_recompute,
-            KEY_CES_TO_RECOMPUTE: self.ces_to_recompute,
-            KEY_RECOMPUTATION_CES: self.recomputation_ces,
-            KEY_SERIALIZATION_ORDER: self.serialization_order,
-            KEY_UDFS: self.udfs
-        })
+        return json.dumps(
+            {
+                KEY_DEPENDENCY_GRAPH: self.dependency_graph,
+                KEY_VARIABLES: self.variables,
+                KEY_VSS_TO_MIGRATE: self.vss_to_migrate,
+                KEY_VSS_TO_RECOMPUTE: self.vss_to_recompute,
+                KEY_CES_TO_RECOMPUTE: self.ces_to_recompute,
+                KEY_RECOMPUTATION_CES: self.recomputation_ces,
+                KEY_SERIALIZATION_ORDER: self.serialization_order,
+                KEY_UDFS: self.udfs,
+            }
+        )
 
     @staticmethod
     def from_json(kv: Dict):
-        return CheckpointFile().with_dependency_graph(kv[KEY_DEPENDENCY_GRAPH])\
-                                  .with_variables(kv[KEY_VARIABLES])\
-                                  .with_vss_to_migrate(kv[KEY_VSS_TO_MIGRATE])\
-                                  .with_vss_to_recompute(kv[KEY_VSS_TO_RECOMPUTE])\
-                                  .with_ces_to_recompute(kv[KEY_CES_TO_RECOMPUTE])\
-                                  .with_recomputation_ces(kv[KEY_RECOMPUTATION_CES])\
-                                  .with_serialization_order(kv[KEY_SERIALIZATION_ORDER])\
-                                  .with_udfs(kv[KEY_UDFS])
+        return (
+            CheckpointFile()
+            .with_dependency_graph(kv[KEY_DEPENDENCY_GRAPH])
+            .with_variables(kv[KEY_VARIABLES])
+            .with_vss_to_migrate(kv[KEY_VSS_TO_MIGRATE])
+            .with_vss_to_recompute(kv[KEY_VSS_TO_RECOMPUTE])
+            .with_ces_to_recompute(kv[KEY_CES_TO_RECOMPUTE])
+            .with_recomputation_ces(kv[KEY_RECOMPUTATION_CES])
+            .with_serialization_order(kv[KEY_SERIALIZATION_ORDER])
+            .with_udfs(kv[KEY_UDFS])
+        )

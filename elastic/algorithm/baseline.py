@@ -5,8 +5,9 @@ from elastic.algorithm.selector import Selector
 
 class MigrateAllBaseline(Selector):
     """
-        Migrates all active VSs.
+    Migrates all active VSs.
     """
+
     def __init__(self, migration_speed_bps=1):
         super().__init__(migration_speed_bps)
 
@@ -20,8 +21,9 @@ class MigrateAllBaseline(Selector):
 
 class RecomputeAllBaseline(Selector):
     """
-        Recomputes all active VSs.
+    Recomputes all active VSs.
     """
+
     def __init__(self, migration_speed_bps=1):
         super().__init__(migration_speed_bps)
 

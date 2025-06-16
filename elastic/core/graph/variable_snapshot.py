@@ -1,16 +1,17 @@
 class VariableSnapshot:
     """
-        A variable snapshot in the dependency graph corresponds to a version of a variable.
-        I.e. if variable 'x' has been assigned 3 times (x = 1, x = 2, x = 3), then 'x' will have 3 corresponding
-        variable snapshots.
+    A variable snapshot in the dependency graph corresponds to a version of a variable.
+    I.e. if variable 'x' has been assigned 3 times (x = 1, x = 2, x = 3), then 'x' will have 3 corresponding
+    variable snapshots.
     """
+
     def __init__(self, name: str, version: int, deleted: bool):
         """
-            Create a variable snapshot from variable properties.
-            Args:
-                name (str): Variable name.
-                version (int): The nth update to the corresponding variable.
-                deleted (bool): Whether this VS is created for the deletion of a variable, i.e. 'del x'.
+        Create a variable snapshot from variable properties.
+        Args:
+            name (str): Variable name.
+            version (int): The nth update to the corresponding variable.
+            deleted (bool): Whether this VS is created for the deletion of a variable, i.e. 'del x'.
         """
         self.name = name
         self.version = version
@@ -28,5 +29,3 @@ class VariableSnapshot:
 
         # Size of variable pointed to by VS; estimated at migration time.
         self.size = 0
-
-

@@ -1,14 +1,17 @@
-import os, sys, time
-import numpy as np
+import os
 import pickle
+import sys
+import time
+
+import numpy as np
 
 
 def profile_migration_speed(dirname: str, alpha=1) -> float:
     """
-        The migration speed is the sum of read and write speed (since we are writing the state to disk, then
-        reading from disk to restore the notebook). The function should ideally be fast (<1 sec).
-        Args:
-            dirname: Location to profile.
+    The migration speed is the sum of read and write speed (since we are writing the state to disk, then
+    reading from disk to restore the notebook). The function should ideally be fast (<1 sec).
+    Args:
+        dirname: Location to profile.
     """
     filecount = 1
     max_time = 0.8
@@ -55,7 +58,10 @@ def profile_migration_speed(dirname: str, alpha=1) -> float:
     os.system("rm -rf {}".format(testing_dir))
 
     migration_speed_bps = total_bytes / (total_read_time + total_write_time * alpha)
-    print("migration speed (bps) (total_bytes / (total_read_time + total_write_time * alpha)):", migration_speed_bps)
+    print(
+        "migration speed (bps) (total_bytes / (total_read_time + total_write_time * alpha)):",
+        migration_speed_bps,
+    )
     print("|- total bytes:", total_bytes)
     print("|- total read time:", total_read_time)
     print("|- total write time:", total_write_time)

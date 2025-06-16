@@ -1,17 +1,18 @@
-from elastic.algorithm.selector import Selector
-from elastic.core.graph.variable_snapshot import VariableSnapshot
-from elastic.core.graph.cell_execution import CellExecution
-
 from collections import defaultdict
+
 import networkx as nx
-from networkx.algorithms.flow import shortest_augmenting_path
 import numpy as np
+from networkx.algorithms.flow import shortest_augmenting_path
+
+from elastic.algorithm.selector import Selector
+from elastic.core.graph.cell_execution import CellExecution
+from elastic.core.graph.variable_snapshot import VariableSnapshot
 
 
 class OptimizerExact(Selector):
     """
-        The exact optimizer constructs a flow graph and runs the min-cut algorithm to exactly find the best
-        checkpointing configuration.
+    The exact optimizer constructs a flow graph and runs the min-cut algorithm to exactly find the best
+    checkpointing configuration.
     """
 
     def __init__(self, migration_speed_bps=1):
@@ -28,7 +29,7 @@ class OptimizerExact(Selector):
 
     def get_new_idx(self) -> int:
         """
-            Get a new index number to add to compute graph.
+        Get a new index number to add to compute graph.
         """
         idx = self.idx
         self.idx += 1
@@ -36,11 +37,11 @@ class OptimizerExact(Selector):
 
     def dfs(self, current: str, visited: set, recompute_ces: str):
         """
-            Perform DFS on the Application History Graph for finding the CEs required to recompute a variable.
-            Args:
-                current (str): Name of current nodeset.
-                visited (set): Visited nodesets.
-                recompute_ces (set): Set of CEs needing re-execution to recompute the current nodeset.
+        Perform DFS on the Application History Graph for finding the CEs required to recompute a variable.
+        Args:
+            current (str): Name of current nodeset.
+            visited (set): Visited nodesets.
+            recompute_ces (set): Set of CEs needing re-execution to recompute the current nodeset.
         """
         if isinstance(current, CellExecution):
             # Result is memoized
@@ -59,7 +60,7 @@ class OptimizerExact(Selector):
 
     def find_prerequisites(self):
         """
-            Find the necessary (prerequisite) cell executions to rerun a cell execution.
+        Find the necessary (prerequisite) cell executions to rerun a cell execution.
         """
         self.active_vss = set(self.active_vss)
 
@@ -69,7 +70,9 @@ class OptimizerExact(Selector):
                 self.dfs(ce, set(), recompute_ces)
                 self.recomputation_ces[ce] = recompute_ces
 
-    def select_vss(self, write_log_location=None, notebook_name=None, optimizer_name=None) -> set:
+    def select_vss(
+        self, write_log_location=None, notebook_name=None, optimizer_name=None
+    ) -> set:
         self.find_prerequisites()
 
         # Construct flow graph for computing mincut
@@ -82,7 +85,9 @@ class OptimizerExact(Selector):
         # Add all active VSs as nodes, connect them with the source with edge capacity equal to migration cost.
         for active_vs in self.active_vss:
             mincut_graph.add_node(active_vs)
-            mincut_graph.add_edge("source", active_vs, capacity=active_vs.size / self.migration_speed_bps)
+            mincut_graph.add_edge(
+                "source", active_vs, capacity=active_vs.size / self.migration_speed_bps
+            )
 
         # Add all CEs as nodes, connect them with the sink with edge capacity equal to recomputation cost.
         for ce in self.dependency_graph.cell_executions:
@@ -105,10 +110,14 @@ class OptimizerExact(Selector):
                 mincut_graph.remove_node(ce)
 
         # Solve min-cut with Ford-Fulkerson.
-        cut_value, partition = nx.minimum_cut(mincut_graph, "source", "sink", flow_func=shortest_augmenting_path)
+        cut_value, partition = nx.minimum_cut(
+            mincut_graph, "source", "sink", flow_func=shortest_augmenting_path
+        )
 
         # Determine the replication plan from the partition.
         vss_to_migrate = set(partition[1]).intersection(self.active_vss)
-        ces_to_recompute = set(partition[0]).intersection(self.dependency_graph.cell_executions)
-         
+        ces_to_recompute = set(partition[0]).intersection(
+            self.dependency_graph.cell_executions
+        )
+
         return vss_to_migrate, ces_to_recompute

@@ -1,7 +1,8 @@
-from typing import Tuple
 import ast
 import inspect
 from collections import deque
+from typing import Tuple
+
 from ipykernel.zmqshell import ZMQInteractiveShell
 
 PRIMITIVES = {int, bool, str, float}
@@ -13,7 +14,7 @@ class Visitor(ast.NodeVisitor):
         # Whether we are currently in local scope.
         self.is_local = False
 
-        # Functions declared in 
+        # Functions declared in
         self.functiondefs = set()
         self.udfcalls = set()
         self.loads = set()
@@ -27,16 +28,24 @@ class Visitor(ast.NodeVisitor):
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
             # Only add as input if variable exists in current scope.
-            if not (self.is_local and node.id not in self.globals and node.id in self.shell.user_ns and
-                    type(self.shell.user_ns[node.id]) in PRIMITIVES):
+            if not (
+                self.is_local
+                and node.id not in self.globals
+                and node.id in self.shell.user_ns
+                and type(self.shell.user_ns[node.id]) in PRIMITIVES
+            ):
                 self.loads.add(node.id)
         ast.NodeVisitor.generic_visit(self, node)
 
     def visit_AugAssign(self, node):
         # Only add as input if variable exists in current scope.
         if isinstance(node.target, ast.Name):
-            if not (self.is_local and node.target.id not in self.globals and node.target.id in self.shell.user_ns and
-                    type(self.shell.user_ns[node.target.id]) in PRIMITIVES):
+            if not (
+                self.is_local
+                and node.target.id not in self.globals
+                and node.target.id in self.shell.user_ns
+                and type(self.shell.user_ns[node.target.id]) in PRIMITIVES
+            ):
                 self.loads.add(node.target.id)
         ast.NodeVisitor.generic_visit(self, node)
 
@@ -58,15 +67,16 @@ class Visitor(ast.NodeVisitor):
         self.is_local = False
 
 
-def find_input_vars(cell: str, existing_variables: set, shell: ZMQInteractiveShell, shell_udfs: set) -> Tuple[
-    set, dict]:
+def find_input_vars(
+    cell: str, existing_variables: set, shell: ZMQInteractiveShell, shell_udfs: set
+) -> Tuple[set, dict]:
     """
-        Capture the input variables of the cell via AST analysis.
-        Args:
-            cell (str): Raw cell cell.
-            existing_variables (set): Set of user-defined variables in the current session.
-            shell (ZMQInteractiveShell): Shell of current session. For inferring variable types.
-            shell_udfs (set): Set of user-declared functions in the shell.
+    Capture the input variables of the cell via AST analysis.
+    Args:
+        cell (str): Raw cell cell.
+        existing_variables (set): Set of user-defined variables in the current session.
+        shell (ZMQInteractiveShell): Shell of current session. For inferring variable types.
+        shell_udfs (set): Set of user-declared functions in the shell.
     """
     # Initialize AST walker.
     v1 = Visitor(shell=shell, shell_udfs=shell_udfs)

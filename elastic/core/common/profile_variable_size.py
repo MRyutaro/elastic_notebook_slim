@@ -4,8 +4,9 @@ import types
 
 def get_total_size(data):
     """
-        Compute the estimated total size of a variable.
+    Compute the estimated total size of a variable.
     """
+
     def get_memory_size(obj, is_initialize, visited):
         # same memory space should be calculated only once
         obj_id = id(obj)
@@ -32,15 +33,21 @@ def get_total_size(data):
                     total_size = total_size + get_memory_size(k, False, visited)
                     total_size = total_size + get_memory_size(v, False, visited)
             # function, method, class
-            elif obj_type in [types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.ModuleType] \
-                    or isinstance(obj, type):  # True if obj is a class
+            elif obj_type in [
+                types.FunctionType,
+                types.MethodType,
+                types.BuiltinFunctionType,
+                types.ModuleType,
+            ] or isinstance(
+                obj, type
+            ):  # True if obj is a class
                 pass
             # custom class instance
             elif isinstance(type(obj), type):
                 # if obj has no builtin size and has additional pointers
                 # if obj has builtin size, all the additional memory space is already added
                 if not hasattr(obj, "__sizeof__") and hasattr(obj, "__dict__"):
-                    for (k, v) in getattr(obj, "__dict__").items():
+                    for k, v in getattr(obj, "__dict__").items():
                         total_size = total_size + get_memory_size(k, False, visited)
                         total_size = total_size + get_memory_size(v, False, visited)
             else:
@@ -52,8 +59,8 @@ def get_total_size(data):
 
 def profile_variable_size(x) -> int:
     """
-        Profiles the size of variable x. Notably, this should recursively find the size of lists, sets and dictionaries.
-        Args:
-            x: The variable to profile.
+    Profiles the size of variable x. Notably, this should recursively find the size of lists, sets and dictionaries.
+    Args:
+        x: The variable to profile.
     """
     return get_total_size(x)

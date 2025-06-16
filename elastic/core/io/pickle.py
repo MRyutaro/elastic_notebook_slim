@@ -1,31 +1,35 @@
-#/usr/bin/env python
+# /usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright 2021-2022 University of Illinois
 
-import dill
-import pickle
-
-import pandas as pd
-# import polars as pl
-import inspect, os
-from scipy import sparse
-import time
-import seaborn
-import networkx
-import matplotlib.pyplot as plt
-import types
-import mmap
 import hashlib
+
+# import polars as pl
+import inspect
+import mmap
+import os
+import pickle
+import time
+import types
+
+import dill
+import matplotlib.pyplot as plt
+import networkx
+import pandas as pd
+import seaborn
+from scipy import sparse
+
 
 def is_picklable_fast(obj):
     if type(obj) in {types.GeneratorType, mmap.mmap, hashlib.sha256}:
         return False
     return True
 
+
 def is_picklable(obj):
     """
-        Checks whether an object is pickleable.
+    Checks whether an object is pickleable.
     """
     if is_exception(obj) or inspect.ismodule(obj):
         return True
@@ -42,9 +46,11 @@ def is_picklable(obj):
 
 def is_exception(obj):
     """
-        List of objects which _is_picklable_dill returns false (or crashes) but are picklable.
+    List of objects which _is_picklable_dill returns false (or crashes) but are picklable.
     """
-    if hasattr(obj, '__module__') and getattr(obj, '__module__', None).split(".")[0] in {plt.__name__, seaborn.__name__, networkx.__name__, pd.__name__}:
+    if hasattr(obj, "__module__") and getattr(obj, "__module__", None).split(".")[
+        0
+    ] in {plt.__name__, seaborn.__name__, networkx.__name__, pd.__name__}:
         return True
     exceptions = [pd.core.frame.DataFrame, sparse.csr.csr_matrix]
     return type(obj) in exceptions

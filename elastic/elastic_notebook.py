@@ -1,37 +1,36 @@
 from __future__ import print_function
 
-import sys, traceback
+import sys
 import time
+import traceback
 import types
 from os.path import dirname
-from pympler import asizeof
 
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
+from pympler import asizeof
+
+from elastic.algorithm.baseline import MigrateAllBaseline, RecomputeAllBaseline
+from elastic.algorithm.optimizer_exact import OptimizerExact
 from elastic.algorithm.selector import OptimizerType
-
-from elastic.core.common.profile_migration_speed import profile_migration_speed
 from elastic.core.common.profile_graph_size import profile_graph_size
-from elastic.core.notebook.checkpoint import checkpoint
-from elastic.core.notebook.update_graph import update_graph
-from elastic.core.notebook.find_input_vars import find_input_vars
-from elastic.core.notebook.find_output_vars import find_created_deleted_vars
-from elastic.core.mutation.fingerprint import construct_fingerprint, compare_fingerprint
-from elastic.core.mutation.object_hash import UnserializableObj
-from elastic.core.notebook.restore_notebook import restore_notebook
-
+from elastic.core.common.profile_migration_speed import profile_migration_speed
 from elastic.core.graph.graph import DependencyGraph
 from elastic.core.io.recover import resume
+from elastic.core.mutation.fingerprint import compare_fingerprint, construct_fingerprint
+from elastic.core.mutation.object_hash import UnserializableObj
+from elastic.core.notebook.checkpoint import checkpoint
+from elastic.core.notebook.find_input_vars import find_input_vars
+from elastic.core.notebook.find_output_vars import find_created_deleted_vars
+from elastic.core.notebook.restore_notebook import restore_notebook
+from elastic.core.notebook.update_graph import update_graph
 
-from elastic.algorithm.optimizer_exact import OptimizerExact
-from elastic.algorithm.baseline import RecomputeAllBaseline, MigrateAllBaseline
 
-
-class ElasticNotebook():
+class ElasticNotebook:
     """
-        Magics class for Elastic Notebook. Enable this in the notebook by running '%load_ext ElasticNotebook'.
-        Enables efficient checkpointing of intermediate notebook state via balancing migration and recomputation
-        costs.
+    Magics class for Elastic Notebook. Enable this in the notebook by running '%load_ext ElasticNotebook'.
+    Enables efficient checkpointing of intermediate notebook state via balancing migration and recomputation
+    costs.
     """
 
     def __init__(self, shell: InteractiveShell):
@@ -84,16 +83,24 @@ class ElasticNotebook():
         # Create id trees for output variables
         for var in self.dependency_graph.variable_snapshots.keys():
             if var not in self.fingerprint_dict and var in self.shell.user_ns:
-                self.fingerprint_dict[var] = construct_fingerprint(self.shell.user_ns[var], self.profile_dict)
+                self.fingerprint_dict[var] = construct_fingerprint(
+                    self.shell.user_ns[var], self.profile_dict
+                )
 
         # Find input variables (variables potentially accessed) of the cell.
-        input_variables, function_defs = find_input_vars(cell, set(self.dependency_graph.variable_snapshots.keys()),
-                                                         self.shell, self.udfs)
+        input_variables, function_defs = find_input_vars(
+            cell,
+            set(self.dependency_graph.variable_snapshots.keys()),
+            self.shell,
+            self.udfs,
+        )
         # Union of ID graphs of input variables. For detecting modifications to unserializable variables.
         input_variables_id_graph_union = set()
         for var in input_variables:
             if var in self.fingerprint_dict:
-                input_variables_id_graph_union = input_variables_id_graph_union.union(self.fingerprint_dict[var][1])
+                input_variables_id_graph_union = input_variables_id_graph_union.union(
+                    self.fingerprint_dict[var][1]
+                )
 
         # Run the cell.
         start_time = time.time()
@@ -101,7 +108,7 @@ class ElasticNotebook():
             cell_output = get_ipython().run_cell(cell)
             cell_output.raise_error()
             # traceback_list = []
-        except:
+        except Exception:
             pass
             # _, _, tb = sys.exc_info()
             # traceback_list = traceback.extract_tb(tb).format()
@@ -110,7 +117,9 @@ class ElasticNotebook():
         infer_start = time.time()
 
         # Find created and deleted variables by computing difference between namespace pre and post execution.
-        created_variables, deleted_variables = find_created_deleted_vars(pre_execution, post_execution)
+        created_variables, deleted_variables = find_created_deleted_vars(
+            pre_execution, post_execution
+        )
 
         # Remove stored ID graphs for deleted variables.
         for var in deleted_variables:
@@ -121,8 +130,12 @@ class ElasticNotebook():
         # Find modified variables by comparing ID graphs and object hashes.
         modified_variables = set()
         for k, v in self.fingerprint_dict.items():
-            changed, overwritten = compare_fingerprint(self.fingerprint_dict[k], self.shell.user_ns[k],
-                                                       self.profile_dict, input_variables_id_graph_union)
+            changed, overwritten = compare_fingerprint(
+                self.fingerprint_dict[k],
+                self.shell.user_ns[k],
+                self.profile_dict,
+                input_variables_id_graph_union,
+            )
             if changed:
                 modified_variables.add(k)
 
@@ -135,22 +148,39 @@ class ElasticNotebook():
                 self.udfs.remove(k)
 
             # Select unserializable variables are assumed to be modified if accessed.
-            if not changed and not overwritten and isinstance(self.fingerprint_dict[k][2], UnserializableObj):
-                if self.fingerprint_dict[k][1].intersection(input_variables_id_graph_union):
+            if (
+                not changed
+                and not overwritten
+                and isinstance(self.fingerprint_dict[k][2], UnserializableObj)
+            ):
+                if self.fingerprint_dict[k][1].intersection(
+                    input_variables_id_graph_union
+                ):
                     modified_variables.add(k)
 
         # Create ID graphs for output variables
         for var in created_variables:
-            self.fingerprint_dict[var] = construct_fingerprint(self.shell.user_ns[var], self.profile_dict)
+            self.fingerprint_dict[var] = construct_fingerprint(
+                self.shell.user_ns[var], self.profile_dict
+            )
 
         # Record newly defined UDFs
         for udf in function_defs:
-            if udf in self.shell.user_ns and isinstance(self.shell.user_ns[udf], types.FunctionType):
+            if udf in self.shell.user_ns and isinstance(
+                self.shell.user_ns[udf], types.FunctionType
+            ):
                 self.udfs.add(udf)
 
         # Update the dependency graph.
-        update_graph(cell, cell_runtime, start_time, input_variables, created_variables.union(modified_variables),
-                     deleted_variables, self.dependency_graph)
+        update_graph(
+            cell,
+            cell_runtime,
+            start_time,
+            input_variables,
+            created_variables.union(modified_variables),
+            deleted_variables,
+            self.dependency_graph,
+        )
 
         # Update total recordevent time tally.
         infer_end = time.time()
@@ -197,33 +227,88 @@ class ElasticNotebook():
 
         # Write overhead metrics to file (for experiments).
         if self.write_log_location:
-            with open(self.write_log_location + '/output_' + self.notebook_name + '_' +
-                      self.optimizer_name + '.txt', 'a') as f:
-                f.write('comparison overhead - ' + repr(asizeof.asizeof(self.dependency_graph) +
-                                                        asizeof.asizeof(self.fingerprint_dict)) + ' bytes' + '\n')
-                f.write('notebook overhead - ' + repr(asizeof.asizeof(self.shell.user_ns)) + ' bytes' + '\n')
-                f.write('Dependency graph storage overhead - ' + repr(profile_graph_size(self.dependency_graph)) +
-                        " bytes" + '\n')
-                f.write('Cell monitoring overhead - ' + repr(self.total_recordevent_time) + " seconds" + '\n')
+            with open(
+                self.write_log_location
+                + "/output_"
+                + self.notebook_name
+                + "_"
+                + self.optimizer_name
+                + ".txt",
+                "a",
+            ) as f:
+                f.write(
+                    "comparison overhead - "
+                    + repr(
+                        asizeof.asizeof(self.dependency_graph)
+                        + asizeof.asizeof(self.fingerprint_dict)
+                    )
+                    + " bytes"
+                    + "\n"
+                )
+                f.write(
+                    "notebook overhead - "
+                    + repr(asizeof.asizeof(self.shell.user_ns))
+                    + " bytes"
+                    + "\n"
+                )
+                f.write(
+                    "Dependency graph storage overhead - "
+                    + repr(profile_graph_size(self.dependency_graph))
+                    + " bytes"
+                    + "\n"
+                )
+                f.write(
+                    "Cell monitoring overhead - "
+                    + repr(self.total_recordevent_time)
+                    + " seconds"
+                    + "\n"
+                )
 
         # Profile the migration speed to filename.
         if not self.manual_migration_speed:
-            self.migration_speed_bps = profile_migration_speed(dirname(filename), alpha=self.alpha)
+            self.migration_speed_bps = profile_migration_speed(
+                dirname(filename), alpha=self.alpha
+            )
             self.selector.migration_speed_bps = self.migration_speed_bps
 
         # Checkpoint the notebook.
-        checkpoint(self.dependency_graph, self.shell, self.fingerprint_dict, self.selector, self.udfs,
-                   filename, self.profile_dict, self.write_log_location, self.notebook_name, self.optimizer_name)
+        checkpoint(
+            self.dependency_graph,
+            self.shell,
+            self.fingerprint_dict,
+            self.selector,
+            self.udfs,
+            filename,
+            self.profile_dict,
+            self.write_log_location,
+            self.notebook_name,
+            self.optimizer_name,
+        )
 
     def load_checkpoint(self, filename):
         if self.debug:
             print("Loading checkpoint...")
 
         # start_time = time.time()
-        self.dependency_graph, variables, vss_to_migrate, vss_to_recompute, oes_to_recompute, self.udfs = \
-            resume(filename, self.write_log_location, self.notebook_name, self.optimizer_name)
-        
+        (
+            self.dependency_graph,
+            variables,
+            vss_to_migrate,
+            vss_to_recompute,
+            oes_to_recompute,
+            self.udfs,
+        ) = resume(
+            filename, self.write_log_location, self.notebook_name, self.optimizer_name
+        )
+
         # Recompute missing VSs and redeclare variables into the kernel.
-        restore_notebook(self.dependency_graph, self.shell, variables, oes_to_recompute, self.write_log_location,
-                         self.notebook_name, self.optimizer_name)
+        restore_notebook(
+            self.dependency_graph,
+            self.shell,
+            variables,
+            oes_to_recompute,
+            self.write_log_location,
+            self.notebook_name,
+            self.optimizer_name,
+        )
         # print("Checkpoint load time:", time.time() - start_time)

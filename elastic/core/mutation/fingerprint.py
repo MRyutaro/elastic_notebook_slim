@@ -1,24 +1,55 @@
-import pandas as pd
-from elastic.core.mutation.id_graph import construct_id_graph, is_root_equals, is_structure_equals
-from elastic.core.mutation.object_hash import UncomparableObj, ImmutableObj, NoneObj, NxGraphObj, \
-    TorchTensorObj, ModuleObj, UnserializableObj, NpArrayObj, ScipyArrayObj, DataframeObj, \
-    construct_object_hash
 import time
+from collections.abc import Iterable
 from types import FunctionType
 
-from collections.abc import Iterable
+import pandas as pd
 
-BASE_TYPES = [str, int, float, bool, type(None), FunctionType, ImmutableObj, UncomparableObj, NoneObj, NxGraphObj,
-              TorchTensorObj, ModuleObj, UnserializableObj, NpArrayObj, ScipyArrayObj, DataframeObj]
+from elastic.core.mutation.id_graph import (
+    construct_id_graph,
+    is_root_equals,
+    is_structure_equals,
+)
+from elastic.core.mutation.object_hash import (
+    DataframeObj,
+    ImmutableObj,
+    ModuleObj,
+    NoneObj,
+    NpArrayObj,
+    NxGraphObj,
+    ScipyArrayObj,
+    TorchTensorObj,
+    UncomparableObj,
+    UnserializableObj,
+    construct_object_hash,
+)
+
+BASE_TYPES = [
+    str,
+    int,
+    float,
+    bool,
+    type(None),
+    FunctionType,
+    ImmutableObj,
+    UncomparableObj,
+    NoneObj,
+    NxGraphObj,
+    TorchTensorObj,
+    ModuleObj,
+    UnserializableObj,
+    NpArrayObj,
+    ScipyArrayObj,
+    DataframeObj,
+]
 
 
 def base_typed(obj, visited):
     """
-        Recursive reflection method to convert any object property into a comparable form.
-        From: https://stackoverflow.com/questions/1227121/compare-object-instances-for-equality-by-their-attributes
+    Recursive reflection method to convert any object property into a comparable form.
+    From: https://stackoverflow.com/questions/1227121/compare-object-instances-for-equality-by-their-attributes
     """
     T = type(obj)
-    from_numpy = T.__module__ == 'numpy'
+    from_numpy = T.__module__ == "numpy"
 
     if T in BASE_TYPES or callable(obj) or (from_numpy and not isinstance(T, Iterable)):
         return obj
@@ -39,15 +70,17 @@ def base_typed(obj, visited):
 
 def deep_equals(*args):
     """
-        Extended equality comparison which compares objects recursively by their attributes, i.e., it also works for
-        certain user-defined objects with no equality (__eq__) defined.
+    Extended equality comparison which compares objects recursively by their attributes, i.e., it also works for
+    certain user-defined objects with no equality (__eq__) defined.
     """
-    return all(base_typed(args[0], set()) == base_typed(other, set()) for other in args[1:])
+    return all(
+        base_typed(args[0], set()) == base_typed(other, set()) for other in args[1:]
+    )
 
 
 def construct_fingerprint(obj, profile_dict):
     """
-        Construct a fingerprint of the object (ID graph + hash).
+    Construct a fingerprint of the object (ID graph + hash).
     """
     start = time.time()
     id_graph, id_set = construct_id_graph(obj)
@@ -62,9 +95,11 @@ def construct_fingerprint(obj, profile_dict):
     return [id_graph, id_set, object_representation]
 
 
-def compare_fingerprint(fingerprint_list, new_obj, profile_dict, input_variables_id_graph_union):
+def compare_fingerprint(
+    fingerprint_list, new_obj, profile_dict, input_variables_id_graph_union
+):
     """
-        Check whether an object has been changed by comparing it to its previous fingerprint.
+    Check whether an object has been changed by comparing it to its previous fingerprint.
     """
     changed = False
     overwritten = False
@@ -72,7 +107,7 @@ def compare_fingerprint(fingerprint_list, new_obj, profile_dict, input_variables
 
     # Hack: check for pandas dataframes and series: if the flag has been flipped back on, the object has been changed.
     if isinstance(new_obj, pd.DataFrame):
-        for (_, col) in new_obj.items():
+        for _, col in new_obj.items():
             if col.__array__().flags.writeable:
                 changed = True
                 break
@@ -86,7 +121,9 @@ def compare_fingerprint(fingerprint_list, new_obj, profile_dict, input_variables
 
     id_graph, id_set = construct_id_graph(new_obj)
 
-    if id_set != fingerprint_list[1] or not is_structure_equals(id_graph, fingerprint_list[0]):
+    if id_set != fingerprint_list[1] or not is_structure_equals(
+        id_graph, fingerprint_list[0]
+    ):
         # Distinguish between overwritten variables and modified variables (i.e., x = 1 vs. x[0] = 1)
         if not is_root_equals(id_graph, fingerprint_list[0]):
             overwritten = True
@@ -112,7 +149,10 @@ def compare_fingerprint(fingerprint_list, new_obj, profile_dict, input_variables
             else:
                 if not deep_equals(new_repr, fingerprint_list[2]):
                     # Variable has equality defined; the variable has been modified.
-                    if "__eq__" in type(new_repr).__dict__.keys() or "eq" in type(new_repr).__dict__.keys():
+                    if (
+                        "__eq__" in type(new_repr).__dict__.keys()
+                        or "eq" in type(new_repr).__dict__.keys()
+                    ):
                         changed = True
                     else:
                         # Object is uncomparable
@@ -131,7 +171,11 @@ def compare_fingerprint(fingerprint_list, new_obj, profile_dict, input_variables
     # 1. the object has been completely overwritten
     # 2. the object has been modified, and is of a comparable type (i.e., hashable or unhashable but has equality
     # defined)
-    if overwritten or (changed and not uncomparable and not isinstance(fingerprint_list[2], UncomparableObj)):
+    if overwritten or (
+        changed
+        and not uncomparable
+        and not isinstance(fingerprint_list[2], UncomparableObj)
+    ):
         fingerprint_list[2] = construct_object_hash(new_obj, deepcopy=True)
     end = time.time()
     profile_dict["representation"] += end - start

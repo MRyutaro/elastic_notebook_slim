@@ -1,14 +1,15 @@
-from elastic.core.graph.graph import DependencyGraph
-from elastic.core.common.profile_variable_size import profile_variable_size
 import sys
+
+from elastic.core.common.profile_variable_size import profile_variable_size
+from elastic.core.graph.graph import DependencyGraph
 
 
 def profile_graph_size(graph: DependencyGraph):
     """
-       Profiles the in-memory size of a dependency graph of Elastic Notebook.
-       For experiments only.
-       Args:
-           graph (DependencyGraph): dependency graph to profile.
+    Profiles the in-memory size of a dependency graph of Elastic Notebook.
+    For experiments only.
+    Args:
+        graph (DependencyGraph): dependency graph to profile.
     """
 
     # Tally fields in graph
