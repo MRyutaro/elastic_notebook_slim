@@ -77,9 +77,14 @@ def checkpoint(
         for active_vs2 in active_vss:
             if active_vs1 != active_vs2:
                 # 両方の変数がfingerprint_dictに存在するかチェック
-                if active_vs1.name not in fingerprint_dict or active_vs2.name not in fingerprint_dict:
+                if (
+                    active_vs1.name not in fingerprint_dict
+                    or active_vs2.name not in fingerprint_dict
+                ):
                     continue
-                if fingerprint_dict[active_vs1.name][1].intersection(fingerprint_dict[active_vs2.name][1]):
+                if fingerprint_dict[active_vs1.name][1].intersection(
+                    fingerprint_dict[active_vs2.name][1]
+                ):
                     overlapping_vss.append((active_vs1, active_vs2))
 
     profile_end = time.time()
