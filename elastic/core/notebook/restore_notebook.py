@@ -1,8 +1,9 @@
+import sys
 import time
+from io import StringIO
 
 from ipykernel.zmqshell import ZMQInteractiveShell
 from IPython import get_ipython
-from IPython.utils.capture import capture_output
 
 from elastic.core.graph.graph import DependencyGraph
 
@@ -35,12 +36,35 @@ def restore_notebook(
         if ce in ces_to_recompute:
             # Rerun cell code; suppress stdout when rerunning.
             print("Rerunning cell", ce.cell_num + 1)
-            cell_capture = capture_output(stdout=True, stderr=True, display=True)
+
+            # 出力を完全に抑制するための設定
+            ipython = get_ipython()
+
+            # 元のdisplay_pubを保存
+            original_display_pub = ipython.display_pub
+
+            # display_pubを一時的に無効化
+            ipython.display_pub = None
+
+            # stdoutとstderrをリダイレクト
+            original_stdout = sys.stdout
+            original_stderr = sys.stderr
+            sys.stdout = StringIO()
+            sys.stderr = StringIO()
+
             try:
-                with cell_capture:
-                    get_ipython().run_cell(ce.cell)
+                # セルを実行（出力は抑制される）
+                cell_output = ipython.run_cell(ce.cell)
+                cell_output.raise_error()
             except Exception as e:
+                # エラーが発生した場合は元のstderrに出力
+                sys.stderr = original_stderr
                 raise e
+            finally:
+                # 元の設定を復元
+                ipython.display_pub = original_display_pub
+                sys.stdout = original_stdout
+                sys.stderr = original_stderr
 
         # Define output variables in the CE.
         for pair in variables[ce.cell_num]:
